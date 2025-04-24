@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { getArticleById } from "../firestoreService";
+import { getArticleById, getCommentsByArticleId } from "../firestoreService";
 import "../style.css";
 import "../reset.css";
 import CommentForm from "../components/CommentForm";
 import CommentList from "../components/CommentList";
 import { useAuth } from "../AuthContext";
 
-function useQuery() {
-  return new URLSearchParams(useLocation().search);
-}
+
 
 function Publication() {
+  function useQuery() {
+    return new URLSearchParams(useLocation().search);
+  }
+
   const query = useQuery();
   const articleId = query.get("id");
   const [article, setArticle] = useState(null);
@@ -30,12 +32,7 @@ function Publication() {
     fetchArticle();
   }, [articleId]);
 
-  const [comments, setComments] = useState(() => {
-    const savedComments = JSON.parse(
-      localStorage.getItem("allComments") || "{}"
-    );
-    return savedComments[articleId] || [];
-  });
+  const [comments, setComments] = useState([]);
 
   const [isLiked, setIsLiked] = useState(() => {
     const likedArticles =
@@ -61,25 +58,38 @@ function Publication() {
     });
   };
 
+  const handleAddComment = (comment) => {
+    if (!currentUser) {
+      alert("Please log in to comment.");
+      return;
+    }
+    const newComment = {
+      comment,
+      userEmail: currentUser.email,
+      userId: currentUser.uid,
+      timestamp: Date.now(),
+    };
+    setComments((prevComments) => [newComment, ...prevComments]);
+  };
+
   useEffect(() => {
-    const allComments = JSON.parse(localStorage.getItem("allComments") || "{}");
-    allComments[articleId] = comments;
-    localStorage.setItem("allComments", JSON.stringify(allComments));
-  }, [comments, articleId]);
+    const fetchComments = async () => {
+      try {
+        const data = await getCommentsByArticleId(articleId);
+        setComments(data);
+      } catch (error) {
+        console.error("Error fetching comments:", error);
+      }
+    };
+
+    fetchComments();
+  }, [articleId]);
 
   useEffect(() => {
     const likedArticles =
       JSON.parse(localStorage.getItem("likedArticles")) || {};
     setIsLiked(!!likedArticles[articleId]);
   }, [articleId]);
-
-  const handleAddComment = (comment) => {
-    if (!currentUser) {
-      alert("Please log in to comment.");
-      return;
-    }
-    setComments([...comments, comment]);
-  };
 
   if (!article) {
     return <div>Loading article...</div>;
@@ -119,7 +129,10 @@ function Publication() {
             </div>
             <div className="comments-section">
               <h2 className="comments-title">Comments</h2>
-              <CommentForm onAddComment={handleAddComment} />
+              <CommentForm
+                onAddComment={handleAddComment}
+                articleId={articleId}
+              />
               <CommentList comments={comments} />
             </div>
           </div>

@@ -1,12 +1,21 @@
 import React, { useState } from "react";
+import { saveComment } from "../firestoreService";
+import { useAuth } from "../AuthContext";
 
-function CommentForm({ onAddComment }) {
+function CommentForm({ onAddComment, articleId }) {
   const [newComment, setNewComment] = useState("");
+  const { currentUser } = useAuth();
 
   const handleAddComment = (e) => {
     e.preventDefault();
     if (newComment.trim()) {
       onAddComment(newComment.trim());
+      saveComment(
+        articleId,
+        newComment.trim(),
+        currentUser.email,
+        currentUser.uid
+      );
       setNewComment("");
     }
   };

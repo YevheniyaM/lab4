@@ -4,7 +4,10 @@ function CommentList({ comments }) {
   return (
     <div className="comments-list">
       {comments.map((comment, index) => (
-        <p key={index}>{comment}</p>
+        <div key={index} className="comment-item">
+          <p className="comment-email">{comment.userEmail}</p>
+          <p className="comment-text">{comment.comment}</p>
+        </div>
       ))}
     </div>
   );

@@ -39,3 +39,26 @@ export const uploadArticles = async () => {
   }
   console.log("Articles uploaded successfully!");
 };
+
+// Функція для збереження коментаря у Firestore
+export const saveComment = async (articleId, comment, userEmail, userId) => {
+  const commentsCollection = collection(db, "comments");
+  const commentRef = doc(commentsCollection, `${articleId}_${Date.now()}`);
+  await setDoc(commentRef, {
+    articleId,
+    comment,
+    userEmail,
+    userId,
+    timestamp: Date.now(),
+  });
+};
+
+// Функція для отримання коментарів з Firestore
+export const getCommentsByArticleId = async (articleId) => {
+  const commentsCollection = collection(db, "comments");
+  const commentsSnapshot = await getDocs(commentsCollection);
+  const commentsList = commentsSnapshot.docs
+    .map((doc) => doc.data())
+    .filter((comment) => comment.articleId === articleId);
+  return commentsList;
+};
